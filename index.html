@@ -306,20 +306,19 @@
         user.name = username;
         
         players = [user];
-        const mockNames = ['QuizMaster', 'TriviaFan', 'SmartyPants', 'CuriousGeorge'];
-        for(let i = 0; i < 4; i++) {
-            const mockAvatar = avatars[Math.floor(Math.random() * avatars.length)];
-            let mockAvatarHTML = '';
-             if (mockAvatar.url) {
-                mockAvatarHTML = `<img src="${mockAvatar.url}" alt="${mockAvatar.id}" class="w-full h-full object-cover rounded-full">`;
-            }
-            players.push({
-                name: mockNames[i],
-                avatarHTML: mockAvatarHTML,
-                score: 0,
-                id: 'player-' + Math.random().toString(36).substr(2, 9)
-            })
+        
+        // Add just one mock player
+        const mockAvatar = avatars[Math.floor(Math.random() * avatars.length)];
+        let mockAvatarHTML = '';
+        if (mockAvatar.url) {
+            mockAvatarHTML = `<img src="${mockAvatar.url}" alt="${mockAvatar.id}" class="w-full h-full object-cover rounded-full">`;
         }
+        players.push({
+            name: 'QuizMaster',
+            avatarHTML: mockAvatarHTML,
+            score: 0,
+            id: 'player-' + Math.random().toString(36).substr(2, 9)
+        });
         
         updatePlayerList();
         updateMyProfileDisplay();
@@ -488,5 +487,4 @@
     </script>
 </body>
 </html>
-
 
