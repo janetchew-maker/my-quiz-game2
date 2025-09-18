@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Quest - The Ultimate Trivia Challenge</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+        }
+        .quiz-bg {
+            background-color: #4c1d95; /* Deep purple */
+            background-image: radial-gradient(circle at top left, rgba(124, 58, 237, 0.5), transparent 40%),
+                              radial-gradient(circle at bottom right, rgba(236, 72, 153, 0.5), transparent 40%);
+        }
+        .card {
+            background-color: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+        }
+        .avatar-selected {
+            transform: scale(1.1);
+            box-shadow: 0 0 0 4px #8b5cf6; /* Violet-500 */
+        }
+        .timer-bar-inner {
+            transition: width 1s linear;
+        }
+        .answer-btn {
+            transition: all 0.2s ease-in-out;
+        }
+        .answer-btn:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .correct-answer {
+            animation: pulse-green 1s;
+        }
+        .incorrect-answer {
+             animation: shake-red 0.5s;
+        }
+        @keyframes pulse-green {
+            0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
+            70% { box-shadow: 0 0 0 20px rgba(34, 197, 94, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+        }
+        @keyframes shake-red {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
+        }
+    </style>
+</head>
+<body class="quiz-bg min-h-screen flex items-center justify-center p-4">
+
+    <!-- Main Container -->
+    <div class="w-full max-w-4xl mx-auto">
+
+        <!-- Page 1: Join Game -->
+        <div id="join-page" class="text-center">
+            <h1 class="text-5xl md:text-7xl font-bold text-white mb-4 animate-pulse">Quiz Quest</h1>
+            <p class="text-xl text-indigo-200 mb-8">The ultimate trivia challenge!</p>
+            <div class="card rounded-2xl shadow-2xl p-8 max-w-md mx-auto">
+                <input id="game-pin-input" type="text" placeholder="Enter Game PIN" class="w-full p-4 text-2xl text-center font-semibold border-4 border-gray-200 rounded-lg focus:ring-4 focus:ring-violet-400 focus:border-violet-400 focus:outline-none transition">
+                <button id="join-game-btn" class="w-full mt-4 bg-violet-600 hover:bg-violet-700 text-white font-bold text-2xl py-4 rounded-lg shadow-lg transition transform hover:scale-105">Join Game</button>
+                 <p id="pin-error" class="text-red-500 mt-2 h-6"></p>
+            </div>
+        </div>
+
+        <!-- Page 2: Create Profile -->
+        <div id="profile-page" class="hidden">
+            <div class="card rounded-2xl shadow-2xl p-8 max-w-lg mx-auto text-center">
+                <h2 class="text-3xl font-bold text-gray-800 mb-6">Create Your Profile</h2>
+                <input id="username-input" type="text" placeholder="Enter your username" class="w-full p-3 text-lg text-center border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-400 focus:outline-none mb-6">
+                
+                <h3 class="text-xl font-semibold text-gray-700 mb-4">Choose Your Avatar</h3>
+                <div id="avatar-selection" class="grid grid-cols-3 gap-4 mb-6">
+                    <!-- Avatars will be injected here by JS -->
+                </div>
+                
+                <button id="lets-go-btn" class="w-full bg-pink-500 hover:bg-pink-600 text-white font-bold text-xl py-3 rounded-lg shadow-lg transition transform hover:scale-105">Let's Go!</button>
+                 <p id="profile-error" class="text-red-500 mt-2 h-6"></p>
+            </div>
+        </div>
+
+        <!-- Page 3: Waiting Room -->
+        <div id="waiting-room-page" class="hidden text-center">
+            <div class="card rounded-2xl shadow-2xl p-8 max-w-md mx-auto">
+                <h2 class="text-4xl font-bold text-violet-700 mb-4">You're In!</h2>
+                <p class="text-lg text-gray-600 mb-6">Waiting for the organizer to start the quiz...</p>
+                <div class="w-full">
+                    <h3 class="text-xl font-semibold mb-2">Players Joined</h3>
+                    <div id="player-list" class="bg-gray-100 rounded-lg p-4 h-40 overflow-y-auto text-left">
+                        <!-- Player list will be injected here by JS -->
+                    </div>
+                </div>
+                 <div class="mt-8 bg-indigo-100 border-l-4 border-indigo-500 text-indigo-700 p-4 rounded-md text-left">
+                    <p class="font-bold">Your Profile</p>
+                    <div id="my-profile-display" class="flex items-center gap-4 mt-2">
+                        <!-- User's chosen avatar and name shown here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Page 4: Quiz -->
+        <div id="quiz-page" class="hidden">
+            <div class="w-full max-w-4xl mx-auto">
+                <!-- Top Info Bar -->
+                <div class="flex justify-between items-center text-white mb-4">
+                    <div id="question-counter" class="text-lg font-semibold">Question 1/10</div>
+                    <div id="player-score" class="text-lg font-semibold">Score: 0</div>
+                </div>
+
+                <!-- Timer Bar -->
+                <div class="w-full bg-white/30 rounded-full h-4 mb-4 shadow-inner">
+                    <div id="timer-bar" class="bg-yellow-400 h-4 rounded-full timer-bar-inner"></div>
+                </div>
+
+                <!-- Question -->
+                <div class="bg-white/90 rounded-2xl shadow-2xl p-8 text-center mb-6 min-h-[150px] flex items-center justify-center">
+                    <h2 id="question-text" class="text-2xl md:text-3xl font-bold text-gray-800"></h2>
+                </div>
+
+                <!-- Answers -->
+                <div id="answer-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Answer buttons injected here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Page 5: Leaderboard -->
+        <div id="leaderboard-page" class="hidden">
+             <div class="card rounded-2xl shadow-2xl p-8 max-w-lg mx-auto text-center">
+                <h2 id="leaderboard-title" class="text-4xl font-bold text-violet-700 mb-6">Scoreboard</h2>
+                
+                <div id="answer-note-container" class="hidden bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded-md mb-6 text-left">
+                    <p class="font-bold">Note</p>
+                    <p id="answer-note-text"></p>
+                </div>
+
+                <div id="leaderboard-list" class="space-y-3">
+                    <!-- Leaderboard entries injected here -->
+                </div>
+                <button id="next-question-btn" class="w-full mt-8 bg-violet-600 hover:bg-violet-700 text-white font-bold text-xl py-3 rounded-lg shadow-lg transition transform hover:scale-105">Next Question</button>
+             </div>
+        </div>
+
+    </div>
+
+    <script>
+    // --- DOM ELEMENTS ---
+    const pages = {
+        join: document.getElementById('join-page'),
+        profile: document.getElementById('profile-page'),
+        waiting: document.getElementById('waiting-room-page'),
+        quiz: document.getElementById('quiz-page'),
+        leaderboard: document.getElementById('leaderboard-page')
+    };
+    const joinButton = document.getElementById('join-game-btn');
+    const pinInput = document.getElementById('game-pin-input');
+    const pinError = document.getElementById('pin-error');
+    const profileError = document.getElementById('profile-error');
+    const letsGoButton = document.getElementById('lets-go-btn');
+    const usernameInput = document.getElementById('username-input');
+    const avatarSelectionContainer = document.getElementById('avatar-selection');
+    const playerListContainer = document.getElementById('player-list');
+    const myProfileDisplayContainer = document.getElementById('my-profile-display');
+
+    // Quiz elements
+    const questionCounter = document.getElementById('question-counter');
+    const playerScoreDisplay = document.getElementById('player-score');
+    const timerBar = document.getElementById('timer-bar');
+    const questionText = document.getElementById('question-text');
+    const answerGrid = document.getElementById('answer-grid');
+    
+    // Leaderboard elements
+    const leaderboardList = document.getElementById('leaderboard-list');
+    const leaderboardTitle = document.getElementById('leaderboard-title');
+    const nextQuestionBtn = document.getElementById('next-question-btn');
+    const answerNoteContainer = document.getElementById('answer-note-container');
+    const answerNoteText = document.getElementById('answer-note-text');
+
+    // --- GAME STATE ---
+    let user = {
+        name: '',
+        avatarHTML: '',
+        score: 0,
+        id: 'player-' + Math.random().toString(36).substr(2, 9)
+    };
+    let currentQuestionIndex = 0;
+    let timerInterval;
+    let players = [];
+    let lastAnswerCorrect = false;
+
+    // --- MOCK DATA ---
+    const avatars = [
+        { id: 'avatar1', url: `https://i.imgur.com/C2BbscH.png` },
+        { id: 'avatar2', url: `https://i.imgur.com/mZ1nYio.png` },
+        { id: 'avatar3', url: `https://i.imgur.com/KhKzCVh.jpeg` },
+        { id: 'avatar4', url: `https://i.imgur.com/yi7PO1r.jpeg` },
+        { id: 'avatar5', url: `https://i.imgur.com/7wUfxP7.jpeg` },
+        { id: 'avatar6', url: `https://i.imgur.com/yKipLbU.jpeg` },
+    ];
+    
+    const quizQuestions = [
+        {
+            question: "According to the Q3’25 Summary for Total International, what was the reported Sales figure in the Sep CV?",
+            options: ["$573M", "$292M", "$677M", "$697M"],
+            correct: 3,
+            note: "The Q3'25 summary table for Total International lists Sales for Sep CV as $697M. [Page2]"
+        },
+        {
+            question: "In the Q4'25 Summary for Direct Government, what was a primary reason for the $144M increase in orders compared to the Jul CV?",
+            options: ["Mainly due to Q3 pull forwards of $10M and FX $2M", "Mainly due to PCR & Accy's of $5M", "Mainly due to M&S $263M", "Mainly due to Saudi $90M, UK CCSW $23M and P&SI $36M"],
+            correct: 3,
+            note: "The report explicitly states these figures as the main drivers for the increase in orders in the Jul CV notes.[Page12]"
+        },
+        {
+            question: "What is the Sep CV forecast for Total International Orders for Full year 2025?",
+            options: ["$2,685M", "$2,614M", "$2,694M", "$1,123M"],
+            correct: 1,
+            note: "The 2025 Summary table shows the Sep CV for Orders is $2,614M for Total International [Page 18]."
+        },
+        {
+            question: "What is the Sep CV forecast for Total International Sales for Full year 2025?",
+            options: ["$2,685M", "$2,614M", "$2,694M", "$1,123M"],
+            correct: 2,
+            note: "The 2025 Summary table shows the Sep CV for Sales is $2,694M for Total International [Page 18]."
+        },
+        {
+            question: "Which project was the largest contributor to Q3'25 orders for Total International?",
+            options: ["BRA-25-PMESP: New Contract", "AU_Telstra RMR 10 Year Renewal", "PL_ENEA Tetra_Phase_1 Poland", "Airwave Home Office"],
+            correct: 1,
+            note: "The 'Q3'25 Top Orders' table lists the Telstra renewal as the top project with a total of $29.6M [Page 4]."
+        },
+        {
+            question: "Which of the following projects is listed as the largest financial risk for FY25 orders?",
+            options: ["Saudi STC", "BRA-25-EB SAD37 INTEGRATOR", "DE_G-MOD_ZNV_TETRA_devices_2025", "GB_R_LUL_Support Extension 2029-2035"],
+            correct: 0,
+            note: "The FY25 Risks and Opportunities table shows this project has a potential negative impact of ($90.0)M on orders.[Page 22]"
+        },
+        {
+            question: "What is the Sep CV and Jul CV Sales forecast for the Tetra technology group for FY25?",
+            options: ["Sep CV : $1,046M ; Jul CV : $1,052M", "Sep CV : $1,812M ; Jul CV : $1,817M", "Sep CV : $1,041M ; Jul CV : $1,035M", "Sep CV : $1,046M ; Jul CV : $972M"],
+            correct: 3,
+            note: "The table breaking down sales by technology for 2025 shows a Sep CV value of $1,046M and Jul CV value of $1,052M for Tetra. [Page 24] (!Error!)"
+        }
+    ];
+
+    // --- FUNCTIONS ---
+    function showPage(pageName) {
+        Object.values(pages).forEach(page => page.classList.add('hidden'));
+        pages[pageName].classList.remove('hidden');
+    }
+
+    function initAvatarSelection() {
+        avatarSelectionContainer.innerHTML = '';
+        avatars.forEach(avatar => {
+            const button = document.createElement('button');
+            button.className = 'p-2 rounded-full bg-gray-200 hover:bg-gray-300 transition aspect-square';
+            button.dataset.avatarId = avatar.id;
+            
+            if (avatar.url) {
+                button.innerHTML = `<img src="${avatar.url}" alt="${avatar.id}" class="w-full h-full object-cover rounded-full">`;
+            }
+
+            button.onclick = () => selectAvatar(avatar.id, button);
+            avatarSelectionContainer.appendChild(button);
+        });
+    }
+
+    function selectAvatar(avatarId, buttonEl) {
+        const selectedAvatar = avatars.find(a => a.id === avatarId);
+        if (selectedAvatar.url) {
+            user.avatarHTML = `<img src="${selectedAvatar.url}" alt="${selectedAvatar.id}" class="w-full h-full object-cover rounded-full">`;
+        }
+        
+        document.querySelectorAll('#avatar-selection button').forEach(btn => {
+            btn.classList.remove('avatar-selected');
+        });
+        buttonEl.classList.add('avatar-selected');
+    }
+
+    function handleJoinGame() {
+        const pin = pinInput.value.trim();
+        if (pin === "1234") {
+            pinError.textContent = '';
+            showPage('profile');
+        } else {
+            pinError.textContent = 'Invalid Game PIN. Please try 1234.';
+        }
+    }
+
+    function handleCreateProfile() {
+        const username = usernameInput.value.trim();
+        if (!username) {
+            profileError.textContent = 'Please enter a username.';
+            return;
+        }
+        if (!user.avatarHTML) {
+            profileError.textContent = 'Please select an avatar.';
+            return;
+        }
+        profileError.textContent = '';
+        user.name = username;
+        
+        players = [user];
+        const mockNames = ['QuizMaster', 'TriviaFan', 'SmartyPants', 'CuriousGeorge'];
+        for(let i = 0; i < 4; i++) {
+            const mockAvatar = avatars[Math.floor(Math.random() * avatars.length)];
+            let mockAvatarHTML = '';
+             if (mockAvatar.url) {
+                mockAvatarHTML = `<img src="${mockAvatar.url}" alt="${mockAvatar.id}" class="w-full h-full object-cover rounded-full">`;
+            }
+            players.push({
+                name: mockNames[i],
+                avatarHTML: mockAvatarHTML,
+                score: 0,
+                id: 'player-' + Math.random().toString(36).substr(2, 9)
+            })
+        }
+        
+        updatePlayerList();
+        updateMyProfileDisplay();
+        showPage('waiting');
+
+        setTimeout(startQuiz, 10000);
+    }
+
+    function updatePlayerList() {
+        playerListContainer.innerHTML = '';
+        players.forEach(p => {
+            const playerDiv = document.createElement('div');
+            playerDiv.className = 'flex items-center gap-2 p-1';
+            playerDiv.innerHTML = `<div class="w-8 h-8">${p.avatarHTML}</div> <span class="font-medium">${p.name}</span>`;
+            playerListContainer.appendChild(playerDiv);
+        });
+    }
+
+     function updateMyProfileDisplay() {
+        myProfileDisplayContainer.innerHTML = `
+            <div class="w-12 h-12">${user.avatarHTML}</div>
+            <span class="text-xl font-bold">${user.name}</span>
+        `;
+    }
+
+    function startQuiz() {
+        currentQuestionIndex = 0;
+        user.score = 0;
+        players.forEach(p => p.score = 0);
+        showQuestion();
+    }
+    
+    function startTimer() {
+        clearInterval(timerInterval);
+        let timeLeft = 45;
+        timerBar.style.width = '100%';
+        
+        timerInterval = setInterval(() => {
+            timeLeft--;
+            const widthPercentage = (timeLeft / 45) * 100;
+            timerBar.style.width = `${widthPercentage}%`;
+            
+            if (timeLeft <= 0) {
+                clearInterval(timerInterval);
+                selectAnswer(null);
+            }
+        }, 1000);
+    }
+    
+    function showQuestion() {
+        if (currentQuestionIndex >= quizQuestions.length) {
+            showLeaderboard(true);
+            return;
+        }
+
+        showPage('quiz');
+        const question = quizQuestions[currentQuestionIndex];
+        questionCounter.textContent = `Question ${currentQuestionIndex + 1}/${quizQuestions.length}`;
+        playerScoreDisplay.textContent = `Score: ${user.score}`;
+        questionText.textContent = question.question;
+
+        answerGrid.innerHTML = '';
+        const answerColors = ['bg-red-500', 'bg-blue-500', 'bg-green-500', 'bg-yellow-500'];
+        const answerSymbols = ['▲', '◆', '●', '■'];
+
+        question.options.forEach((option, index) => {
+            const button = document.createElement('button');
+            button.className = `answer-btn w-full p-4 rounded-lg text-white font-bold text-lg md:text-xl flex items-center justify-start gap-4 ${answerColors[index]}`;
+            button.innerHTML = `
+                <div class="w-8 h-8 flex items-center justify-center text-2xl">${answerSymbols[index]}</div>
+                <span>${option}</span>
+            `;
+            button.onclick = () => selectAnswer(index);
+            answerGrid.appendChild(button);
+        });
+        
+        startTimer();
+    }
+    
+    function selectAnswer(selectedIndex) {
+        clearInterval(timerInterval);
+        const question = quizQuestions[currentQuestionIndex];
+        const buttons = answerGrid.querySelectorAll('button');
+        
+        lastAnswerCorrect = false;
+
+        buttons.forEach((button, index) => {
+            button.disabled = true;
+            if (index === question.correct) {
+                button.classList.add('correct-answer');
+            } else if (index === selectedIndex) {
+                button.classList.add('incorrect-answer');
+            } else {
+                 button.classList.add('opacity-50');
+            }
+        });
+        
+        if (selectedIndex === question.correct) {
+            const points = 500 + Math.round((parseFloat(timerBar.style.width) / 100) * 500);
+            user.score += points;
+            lastAnswerCorrect = true;
+        }
+
+        players.forEach(p => {
+            if(p.id !== user.id){
+                if(Math.random() > 0.3){ 
+                    p.score += Math.floor(Math.random() * 800) + 200;
+                }
+            }
+        });
+        
+        setTimeout(showLeaderboard, 2000);
+    }
+    
+    function showLeaderboard(isFinal = false) {
+        const answeredQuestion = quizQuestions[currentQuestionIndex];
+        answerNoteContainer.classList.add('hidden');
+
+        if (lastAnswerCorrect && answeredQuestion && answeredQuestion.note) {
+            answerNoteText.textContent = answeredQuestion.note;
+            answerNoteContainer.classList.remove('hidden');
+        }
+        
+        players.sort((a, b) => b.score - a.score);
+        leaderboardList.innerHTML = '';
+
+        players.forEach((p, index) => {
+            const isCurrentUser = p.id === user.id;
+            const entryDiv = document.createElement('div');
+            entryDiv.className = `flex items-center justify-between p-3 rounded-lg ${isCurrentUser ? 'bg-violet-200 border-2 border-violet-500' : 'bg-gray-100'}`;
+            entryDiv.innerHTML = `
+                <div class="flex items-center gap-3">
+                    <span class="font-bold text-lg w-6">${index + 1}</span>
+                    <div class="w-10 h-10">${p.avatarHTML}</div>
+                    <span class="font-semibold">${p.name}</span>
+                </div>
+                <span class="font-bold text-lg text-violet-700">${p.score}</span>
+            `;
+            leaderboardList.appendChild(entryDiv);
+        });
+        
+        currentQuestionIndex++;
+        
+        if (isFinal || currentQuestionIndex >= quizQuestions.length) {
+            leaderboardTitle.textContent = 'Final Results!';
+            nextQuestionBtn.textContent = 'Play Again';
+            nextQuestionBtn.onclick = () => window.location.reload();
+        } else {
+            leaderboardTitle.textContent = 'Scoreboard';
+            nextQuestionBtn.textContent = 'Next Question';
+            nextQuestionBtn.onclick = showQuestion;
+        }
+        
+        showPage('leaderboard');
+    }
+
+    // --- EVENT LISTENERS ---
+    joinButton.addEventListener('click', handleJoinGame);
+    pinInput.addEventListener('keyup', (e) => { if (e.key === 'Enter') handleJoinGame(); });
+    letsGoButton.addEventListener('click', handleCreateProfile);
+    usernameInput.addEventListener('keyup', (e) => { if (e.key === 'Enter') handleCreateProfile(); });
+
+    // --- INITIALIZATION ---
+    showPage('join');
+    initAvatarSelection();
+    </script>
+</body>
+</html>
+
+
